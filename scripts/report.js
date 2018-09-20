@@ -54,16 +54,15 @@ module.exports = (robot) => {
       const msg = { attachments: [] };
 
       robot.send({ room }, '*前日からのチャンネル人数増減*');
+      const attachment = { fields: [] };
+      attachment.color = '#658CFF';
+
+      msg.attachments.push(attachment);
 
       channels.forEach((c) => {
-        const attachment = { fields: [] };
-
-        attachment.color = '#658CFF';
-        attachment.ts = c.created;
-
         attachment.fields.push({
           title: 'チャンネル',
-          value: `#${c.name}`,
+          value: c.is_new ? `#${c.name} (新規)` : `#${c.name}`,
           short: true
         });
 
@@ -72,8 +71,6 @@ module.exports = (robot) => {
           value: (c.diff_num_members > 0 ? `+${c.diff_num_members}` : `${c.diff_num_members}` ) + ` (${c.num_members})`,
           short: true
         });
-
-        msg.attachments.push(attachment);
       });
 
       robot.send({ room }, msg);
