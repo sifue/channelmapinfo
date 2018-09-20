@@ -17,7 +17,7 @@ fs.mkdir(CHANNELS_LOG, err => {
 module.exports = robot => {
   // 日次定期実行
   const CronJob = require('cron').CronJob;
-  const job = new CronJob('0 50 23 * * *', () => {
+  const job = new CronJob('0 0 6 * * *', () => {
     sendDailyReport(robot)
       .then(channels => {
         robot.logger.info('チャンネル人数の日次変化レポートをを送信しました。');
