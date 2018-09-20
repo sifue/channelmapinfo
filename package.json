@@ -5,6 +5,8 @@
   "author": "Soichiro-Yoshimura <yoshimura@soichiro.org>",
   "description": "Slack channel map supporter bot with reporting channel information.",
   "dependencies": {
+    "@slack/client": "^4.6.0",
+    "cron": "^1.4.1",
     "hubot": "^3.1.1",
     "hubot-diagnostics": "^1.0.0",
     "hubot-google-images": "^0.2.7",
@@ -23,7 +25,10 @@
     "precommit": "lint-staged"
   },
   "lint-staged": {
-    "*.{js,json,css,md}": ["prettier --write --single-quote=true", "git add"]
+    "*.{js,json,css,md}": [
+      "prettier --write --single-quote=true",
+      "git add"
+    ]
   },
   "engines": {
     "node": "8.9.4"
