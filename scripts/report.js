@@ -6,39 +6,46 @@ const fs = require('fs');
 const CHANNELS_LOG = 'channels_log';
 
 // チャンネルリストログの保存フォルダ作成
-fs.mkdir(CHANNELS_LOG,  (err) => {
-  if(err && err.code !== 'EEXIST') { // すでにディレクトリ存在する以外のエラーの場合
+fs.mkdir(CHANNELS_LOG, err => {
+  if (err && err.code !== 'EEXIST') {
+    // すでにディレクトリ存在する以外のエラーの場合
     console.error(err);
   }
 });
 
 // Hubotのボット定義
-module.exports = (robot) => {
-
+module.exports = robot => {
   // 日次定期実行
   const CronJob = require('cron').CronJob;
   const job = new CronJob('0 50 23 * * *', () => {
-    sendDailyReport(robot).then((channels) => {
-      robot.logger.info('チャンネル人数の日次変化レポートをを送信しました。');
-    }).catch(console.error);
+    sendDailyReport(robot)
+      .then(channels => {
+        robot.logger.info('チャンネル人数の日次変化レポートをを送信しました。');
+      })
+      .catch(console.error);
   });
   job.start();
 
   // ch-report>コマンド: レポートを送信する
-  robot.hear(/ch-report>/i, (msg) => {
-      sendDailyReport(robot).then((channels) => {
+  robot.hear(/ch-report>/i, msg => {
+    sendDailyReport(robot)
+      .then(channels => {
         robot.logger.info('チャンネル人数の日次変化レポートをを送信しました。');
-      }).catch(console.error);
+      })
+      .catch(console.error);
   });
 
   // ch-fetch>コマンド: Slackからのチャンネルリストの取得保存だけをする
-  robot.hear(/ch-fetch>/i, (msg) => {
-    fetchChannelList().then((channels) => {
-      const content = 'Slackからチャンネルリストを取得してファイル保存しました。';
-      msg.send(content);
-      robot.logger.info(content);
-    }).catch(console.error);
-});
+  robot.hear(/ch-fetch>/i, msg => {
+    fetchChannelList()
+      .then(channels => {
+        const content =
+          'Slackからチャンネルリストを取得してファイル保存しました。';
+        msg.send(content);
+        robot.logger.info(content);
+      })
+      .catch(console.error);
+  });
 
   /**
    * 前日と今日のチャンネル人数のDiffを作成するしてレポートを送る
@@ -47,8 +54,7 @@ module.exports = (robot) => {
    * @return Promise.<Object[]>
    */
   function sendDailyReport(robot) {
-
-    return createNumMembersDiff().then((channels) => {
+    return createNumMembersDiff().then(channels => {
       const room = '#チャンネルマップ';
       const now = new Date();
       const msg = { attachments: [] };
@@ -59,16 +65,28 @@ module.exports = (robot) => {
 
       msg.attachments.push(attachment);
 
-      channels.forEach((c) => {
-        attachment.fields.push({
+      attachment.fields.push(
+        {
           title: 'チャンネル',
+          short: true
+        },
+        {
+          title: '増減 (現在値)',
+          short: true
+        }
+      );
+
+      channels.forEach(c => {
+        attachment.fields.push({
           value: c.is_new ? `#${c.name} (新規)` : `#${c.name}`,
           short: true
         });
 
         attachment.fields.push({
-          title: '増減 (現在値)',
-          value: (c.diff_num_members > 0 ? `+${c.diff_num_members}` : `${c.diff_num_members}` ) + ` (${c.num_members})`,
+          value:
+            (c.diff_num_members > 0
+              ? `+${c.diff_num_members}`
+              : `${c.diff_num_members}`) + ` (${c.num_members})`,
           short: true
         });
       });
@@ -83,25 +101,26 @@ module.exports = (robot) => {
    * @return Promise.<Object[]>
    */
   function createNumMembersDiff() {
-    return loadYesterdayChannelList().then((yesterdayChannels) => {
+    return loadYesterdayChannelList().then(yesterdayChannels => {
       const yesterdayMap = new Map();
-      yesterdayChannels.forEach((c) => {
+      yesterdayChannels.forEach(c => {
         yesterdayMap.set(c.id, c);
       });
 
-      return fetchChannelList().then((todayChannels) => {
+      return fetchChannelList().then(todayChannels => {
         // Diff配列を作る
         const diffs = [];
-        todayChannels.forEach((c) => {
+        todayChannels.forEach(c => {
           if (yesterdayMap.has(c.id)) {
             const yesterdayChannel = yesterdayMap.get(c.id);
             // チャンネル人数に差があるチャンネルを属性足して追加
-            if(c.num_members !== yesterdayChannel.num_members) {
+            if (c.num_members !== yesterdayChannel.num_members) {
               c.is_new = false;
               c.diff_num_members = c.num_members - yesterdayChannel.num_members;
               diffs.push(c);
             }
-          } else { // 新規チャンネルもdiffに入れる
+          } else {
+            // 新規チャンネルもdiffに入れる
             c.is_new = true;
             c.diff_num_members = c.num_members;
             diffs.push(c);
@@ -117,14 +136,15 @@ module.exports = (robot) => {
    * @return Promise.<Object[]>
    */
   function loadYesterdayChannelList() {
-    const yesterday = new Date(new Date().getTime() - (1000 * 60 * 60 * 24));
-    const filename = CHANNELS_LOG + '/' + moment(yesterday).format('YYYY-MM-DD') + '.json';
+    const yesterday = new Date(new Date().getTime() - 1000 * 60 * 60 * 24);
+    const filename =
+      CHANNELS_LOG + '/' + moment(yesterday).format('YYYY-MM-DD') + '.json';
     return new Promise((resolve, reject) => {
       fs.readFile(filename, 'utf-8', (err, data) => {
         if (err) {
           reject(err);
           return;
-        } 
+        }
         return resolve(JSON.parse(data));
       });
     });
@@ -135,13 +155,14 @@ module.exports = (robot) => {
    * @return Promise.<Object[]>
    */
   function fetchChannelList() {
-    const filename = CHANNELS_LOG + '/' + moment().format('YYYY-MM-DD') + '.json';
+    const filename =
+      CHANNELS_LOG + '/' + moment().format('YYYY-MM-DD') + '.json';
     const token = process.env.HUBOT_SLACK_TOKEN;
     const web = new WebClient(token);
 
-    return web.channels.list().then((res) => {
+    return web.channels.list().then(res => {
       return new Promise((resolve, reject) => {
-        fs.writeFile(filename, JSON.stringify(res.channels), (err) => {
+        fs.writeFile(filename, JSON.stringify(res.channels), err => {
           if (err) {
             reject(err);
             return;
@@ -151,6 +172,4 @@ module.exports = (robot) => {
       });
     });
   }
-
-
 };
