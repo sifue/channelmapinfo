@@ -1,33 +1,85 @@
 'use strict';
+
 const moment = require('moment');
 const { WebClient } = require('@slack/client');
 const fs = require('fs');
 const CHANNELS_LOG = 'channels_log';
 
-// 保存フォルダ作成
+// チャンネルリストログの保存フォルダ作成
 fs.mkdir(CHANNELS_LOG,  (err) => {
   if(err && err.code !== 'EEXIST') { // すでにディレクトリ存在する以外のエラーの場合
     console.error(err);
   }
 });
 
+// Hubotのボット定義
 module.exports = (robot) => {
-  // 定期実行
+
+  // 日次定期実行
   const CronJob = require('cron').CronJob;
-  const job = new CronJob('0 * * * * *', () => {
-    robot.logger.info('きたよ');
-    robot.send({ room: '#チャンネルマップ'}, 'きたよ');
+  const job = new CronJob('0 50 23 * * *', () => {
+    sendDailyReport(robot).then((channels) => {
+      robot.logger.info('チャンネル人数の日次変化レポートをを送信しました。');
+    }).catch(console.error);
   });
   job.start();
 
-  // チャットリプライ
-  robot.hear(/ch-map-info>/i, (msg) => {
-      const username = msg.message.user.name;
-      msg.send('Hello, ' + username);
-      createNumMembersDiff().then((channels) => {
-        robot.logger.info(channels);
+  // ch-report>コマンド: レポートを送信する
+  robot.hear(/ch-report>/i, (msg) => {
+      sendDailyReport(robot).then((channels) => {
+        robot.logger.info('チャンネル人数の日次変化レポートをを送信しました。');
       }).catch(console.error);
   });
+
+  // ch-fetch>コマンド: Slackからのチャンネルリストの取得保存だけをする
+  robot.hear(/ch-fetch>/i, (msg) => {
+    fetchChannelList().then((channels) => {
+      const content = 'Slackからチャンネルリストを取得してファイル保存しました。';
+      msg.send(content);
+      robot.logger.info(content);
+    }).catch(console.error);
+});
+
+  /**
+   * 前日と今日のチャンネル人数のDiffを作成するしてレポートを送る
+   * - チャンネル
+   * - 増減 (現在値)
+   * @return Promise.<Object[]>
+   */
+  function sendDailyReport(robot) {
+
+    return createNumMembersDiff().then((channels) => {
+      const room = '#チャンネルマップ';
+      const now = new Date();
+      const msg = { attachments: [] };
+
+      robot.send({ room }, '*前日からのチャンネル人数増減*');
+
+      channels.forEach((c) => {
+        const attachment = { fields: [] };
+
+        attachment.color = '#658CFF';
+        attachment.ts = c.created;
+
+        attachment.fields.push({
+          title: 'チャンネル',
+          value: `#${c.name}`,
+          short: true
+        });
+
+        attachment.fields.push({
+          title: '増減 (現在値)',
+          value: (c.diff_num_members > 0 ? `+${c.diff_num_members}` : `${c.diff_num_members}` ) + ` (${c.num_members})`,
+          short: true
+        });
+
+        msg.attachments.push(attachment);
+      });
+
+      robot.send({ room }, msg);
+      return channels;
+    });
+  }
 
   /**
    * 前日と今日のチャンネル人数のDiffを作成する
@@ -48,9 +100,14 @@ module.exports = (robot) => {
             const yesterdayChannel = yesterdayMap.get(c.id);
             // チャンネル人数に差があるチャンネルを属性足して追加
             if(c.num_members !== yesterdayChannel.num_members) {
+              c.is_new = false;
               c.diff_num_members = c.num_members - yesterdayChannel.num_members;
               diffs.push(c);
             }
+          } else { // 新規チャンネルもdiffに入れる
+            c.is_new = true;
+            c.diff_num_members = c.num_members;
+            diffs.push(c);
           }
         });
         return diffs;
@@ -97,4 +154,6 @@ module.exports = (robot) => {
       });
     });
   }
+
+
 };
