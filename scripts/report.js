@@ -55,8 +55,8 @@ module.exports = robot => {
    */
   function sendDailyReport(robot) {
     return createNumMembersDiff().then(channels => {
+      // const room = '#sifuetest3';
       const room = '#チャンネルマップ';
-      const now = new Date();
       const msg = { attachments: [] };
 
       robot.send({ room }, '*前日からのチャンネル人数増減*');
@@ -78,7 +78,7 @@ module.exports = robot => {
 
       channels.forEach(c => {
         attachment.fields.push({
-          value: c.is_new ? `#${c.name} (新規)` : `#${c.name}`,
+          value: c.is_new ? `${c.name} (新規)` : `${c.name}`,
           short: true
         });
 
@@ -108,6 +108,7 @@ module.exports = robot => {
       });
 
       return fetchChannelList().then(todayChannels => {
+      // return loadTodayChannelList().then(todayChannels => {
         // Diff配列を作る
         const diffs = [];
         todayChannels.forEach(c => {
@@ -139,6 +140,25 @@ module.exports = robot => {
     const yesterday = new Date(new Date().getTime() - 1000 * 60 * 60 * 24);
     const filename =
       CHANNELS_LOG + '/' + moment(yesterday).format('YYYY-MM-DD') + '.json';
+    return new Promise((resolve, reject) => {
+      fs.readFile(filename, 'utf-8', (err, data) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        return resolve(JSON.parse(data));
+      });
+    });
+  }
+
+  /**
+   * 本日のログファイルをローカルファイルをより取得する
+   * @return Promise.<Object[]>
+   */
+  function loadTodayChannelList() {
+    const today = new Date();
+    const filename =
+      CHANNELS_LOG + '/' + moment(today).format('YYYY-MM-DD') + '.json';
     return new Promise((resolve, reject) => {
       fs.readFile(filename, 'utf-8', (err, data) => {
         if (err) {
