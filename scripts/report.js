@@ -20,23 +20,23 @@ module.exports = robot => {
   const job = new CronJob('0 0 6 * * *', () => {
     sendDailyReport(robot)
       .then(channels => {
-        robot.logger.info('チャンネル人数の日次変化レポートをを送信しました。');
+        robot.logger.info('チャンネル人数の日次変化レポートを送信しました。');
       })
       .catch(console.error);
   });
   job.start();
 
   // ch-report>コマンド: レポートを送信する
-  robot.hear(/ch-report>/i, msg => {
+  robot.hear(/^ch-report>/i, msg => {
     sendDailyReport(robot)
       .then(channels => {
-        robot.logger.info('チャンネル人数の日次変化レポートをを送信しました。');
+        robot.logger.info('チャンネル人数の日次変化レポートを送信しました。');
       })
       .catch(console.error);
   });
 
   // ch-fetch>コマンド: Slackからのチャンネルリストの取得保存だけをする
-  robot.hear(/ch-fetch>/i, msg => {
+  robot.hear(/^ch-fetch>/i, msg => {
     fetchChannelList()
       .then(channels => {
         const content =
@@ -59,7 +59,6 @@ module.exports = robot => {
       const room = '#チャンネルマップ';
       const msg = { attachments: [] };
 
-      robot.send({ room }, '*前日からのチャンネル人数増減*');
       const attachment = { fields: [] };
       attachment.color = '#658CFF';
 
@@ -67,7 +66,7 @@ module.exports = robot => {
 
       attachment.fields.push(
         {
-          title: 'チャンネル',
+          title: '前日より変化したチャンネル',
           short: true
         },
         {
@@ -78,7 +77,7 @@ module.exports = robot => {
 
       channels.forEach(c => {
         attachment.fields.push({
-          value: c.is_new ? `${c.name} (新規)` : `${c.name}`,
+          value: c.is_new ? `#${c.name} (新規)` : `#${c.name} `,
           short: true
         });
 
@@ -108,7 +107,7 @@ module.exports = robot => {
       });
 
       return fetchChannelList().then(todayChannels => {
-      // return loadTodayChannelList().then(todayChannels => {
+        // return loadTodayChannelList().then(todayChannels => {
         // Diff配列を作る
         const diffs = [];
         todayChannels.forEach(c => {
