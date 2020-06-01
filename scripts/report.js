@@ -17,7 +17,7 @@ fs.mkdir(CHANNELS_LOG, err => {
 module.exports = robot => {
   // 日次定期実行
   const CronJob = require('cron').CronJob;
-  const job = new CronJob('0 0 5 * * *', () => {
+  const job = new CronJob('0 0 8 * * *', () => {
     sendDailyReport(robot)
       .then(channels => {
         robot.logger.info('チャンネル人数の日次変化レポートを送信しました。');
@@ -111,7 +111,9 @@ module.exports = robot => {
 
     if (channel) {
       msg.send(
-        `#${channel.name} はtimesチャンネルの中で第${channel.rank}位です。 (参加者数${channel.num_members}人)`
+        `#${channel.name} はtimesチャンネルの中で第${
+          channel.rank
+        }位です。 (参加者数${channel.num_members}人)`
       );
     } else {
       msg.send(`#${nameStr} は見つかりませんでした。`);
