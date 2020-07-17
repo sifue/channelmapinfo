@@ -150,6 +150,11 @@ module.exports = robot => {
         }
       );
 
+      // 増減数の降順でソート
+      channels.sort((a, b) => {
+        return b.diff_num_members - a.diff_num_members;
+      });
+
       channels.forEach(c => {
         attachment.fields.push({
           value: c.is_new ? `#${c.name} (新規)` : `#${c.name} `,
