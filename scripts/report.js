@@ -1,7 +1,7 @@
 'use strict';
 
 const moment = require('moment');
-const { WebClient } = require('@slack/client');
+const { WebClient } = require('@slack/web-api');
 const fs = require('fs');
 const CHANNELS_LOG = 'channels_log';
 
@@ -256,10 +256,7 @@ module.exports = robot => {
   function fetchChannelList() {
     const filename =
       CHANNELS_LOG + '/' + moment().format('YYYY-MM-DD') + '.json';
-    const token = process.env.HUBOT_SLACK_TOKEN;
-    const web = new WebClient(token);
-
-    return web.channels.list().then(res => {
+    return fetchChannelListRec().then(res => {
       return new Promise((resolve, reject) => {
         fs.writeFile(filename, JSON.stringify(res.channels), err => {
           if (err) {
@@ -270,5 +267,38 @@ module.exports = robot => {
         });
       });
     });
+  }
+
+  /**
+   * チャンネル一覧をSlackより取得し、cursorを使ったものをまとめて結合する
+   * @return Promise.<Object[]>
+   */
+  async function fetchChannelListRec() {
+    const token = process.env.HUBOT_SLACK_TOKEN;
+    const web = new WebClient(token);
+
+    let cursor;
+    let channels = [];
+
+    do {
+      const res = await web.conversations.list({
+        cursor: cursor,
+        exclude_archived: true,
+        limit: 1000,
+        types: 'public_channel'
+      });
+
+      if (res.ok && res.response_metadata) {
+        cursor = res.response_metadata.next_cursor;
+        channels = channels.concat(res.channels);
+      } else {
+        console.log(
+          '[ERROR] 正しくconversations.list APIが利用できませんでした。 res:'
+        );
+        console.log(res);
+      }
+    } while (cursor);
+
+    return { channels };
   }
 };
