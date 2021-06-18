@@ -48,7 +48,7 @@ module.exports = robot => {
   });
 
   // times-ranking>コマンド: 現在のtimesがついているランキングを表示する
-  robot.hear(/^times-ranking>/i, async msg => {
+  robot.hear(/times-ranking>/i, async msg => {
     let channels = await loadTodayChannelList();
     if (!channels) channels = await loadYesterdayChannelList();
     let rankedChannels = channels
