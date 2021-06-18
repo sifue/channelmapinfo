@@ -83,7 +83,7 @@ module.exports = robot => {
         short: true
       });
       attachment.fields.push({
-        value: `#${c.name}`,
+        value: `<#${c.id}>`,
         short: true
       });
     });
@@ -157,7 +157,7 @@ module.exports = robot => {
 
       channels.forEach(c => {
         attachment.fields.push({
-          value: c.is_new ? `#${c.name} (新規)` : `#${c.name} `,
+          value: c.is_new ? `<#${c.id}> (新規)` : `<#${c.id}> `,
           short: true
         });
 
