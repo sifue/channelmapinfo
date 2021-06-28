@@ -32,7 +32,7 @@ module.exports = robot => {
   // :+1: が付くと名前付きで褒めてくれ、いいねの数をカウント
   const sentSet = new Set(); // 送信済みいいね (room:TS:sendUserId)
 
-  robot.react(res => {
+  robot.hearReaction(res => {
     const ts = res.message.item.ts; // いいねされたメッセージのID (room:TS)
     const sendUserId = res.message.user.id;
     const keyOfSend = res.message.room + ':' + ts + ':' + sendUserId; // 対象メッセージID(room:TS):いいね送った人のID で重複カウント排除
