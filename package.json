@@ -10,10 +10,7 @@
     "hubot": "^3.1.1",
     "hubot-diagnostics": "^1.0.0",
     "hubot-slack": "^4.5.4",
-    "moment": "^2.22.2",
-    "pg": "^6.1.0",
-    "pg-hstore": "^2.3.2",
-    "sequelize": "^3.25.0"
+    "moment": "^2.22.2"
   },
   "scripts": {
     "precommit": "lint-staged"
