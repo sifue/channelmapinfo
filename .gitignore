@@ -4,3 +4,4 @@ node_modules
 channels.json
 channels_log
 report.csv
+join_messages.json
